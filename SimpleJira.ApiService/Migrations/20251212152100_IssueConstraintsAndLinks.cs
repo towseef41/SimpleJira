@@ -39,73 +39,34 @@ namespace SimpleJira.ApiService.Migrations
                 oldType: "integer",
                 oldNullable: true);
 
-            migrationBuilder.CreateTable(
-                name: "Comments",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    IssueId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Body = table.Column<string>(type: "character varying(4000)", maxLength: 4000, nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    AuthorId = table.Column<Guid>(type: "uuid", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Comments", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Comments_Issues_IssueId",
-                        column: x => x.IssueId,
-                        principalTable: "Issues",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_Comments_Users_AuthorId",
-                        column: x => x.AuthorId,
-                        principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "IssueLinks",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    IssueId = table.Column<Guid>(type: "uuid", nullable: false),
-                    LinkedIssueId = table.Column<Guid>(type: "uuid", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_IssueLinks", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_IssueLinks_Issues_IssueId",
-                        column: x => x.IssueId,
-                        principalTable: "Issues",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_IssueLinks_Issues_LinkedIssueId",
-                        column: x => x.LinkedIssueId,
-                        principalTable: "Issues",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Comments_AuthorId",
+            migrationBuilder.AlterColumn<string>(
+                name: "Body",
                 table: "Comments",
-                column: "AuthorId");
+                type: "character varying(4000)",
+                maxLength: 4000,
+                nullable: false,
+                oldClrType: typeof(string),
+                oldType: "text");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_Comments_IssueId",
+            migrationBuilder.DropForeignKey(
+                name: "FK_Comments_Users_AuthorId",
+                table: "Comments");
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_Comments_Users_AuthorId",
                 table: "Comments",
-                column: "IssueId");
+                column: "AuthorId",
+                principalTable: "Users",
+                principalColumn: "Id",
+                onDelete: ReferentialAction.SetNull);
 
-            migrationBuilder.CreateIndex(
-                name: "IX_IssueLinks_IssueId_LinkedIssueId",
+            migrationBuilder.AddForeignKey(
+                name: "FK_IssueLinks_Issues_LinkedIssueId",
                 table: "IssueLinks",
-                columns: new[] { "IssueId", "LinkedIssueId" },
-                unique: true);
+                column: "LinkedIssueId",
+                principalTable: "Issues",
+                principalColumn: "Id",
+                onDelete: ReferentialAction.Cascade);
 
             migrationBuilder.CreateIndex(
                 name: "IX_IssueLinks_LinkedIssueId",
@@ -116,11 +77,17 @@ namespace SimpleJira.ApiService.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "Comments");
+            migrationBuilder.DropForeignKey(
+                name: "FK_Comments_Users_AuthorId",
+                table: "Comments");
 
-            migrationBuilder.DropTable(
-                name: "IssueLinks");
+            migrationBuilder.DropForeignKey(
+                name: "FK_IssueLinks_Issues_LinkedIssueId",
+                table: "IssueLinks");
+
+            migrationBuilder.DropIndex(
+                name: "IX_IssueLinks_LinkedIssueId",
+                table: "IssueLinks");
 
             migrationBuilder.AlterColumn<string>(
                 name: "Title",
@@ -149,6 +116,22 @@ namespace SimpleJira.ApiService.Migrations
                 oldClrType: typeof(int),
                 oldType: "integer",
                 oldNullable: true);
+
+            migrationBuilder.AlterColumn<string>(
+                name: "Body",
+                table: "Comments",
+                type: "text",
+                nullable: false,
+                oldClrType: typeof(string),
+                oldType: "character varying(4000)",
+                oldMaxLength: 4000);
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_Comments_Users_AuthorId",
+                table: "Comments",
+                column: "AuthorId",
+                principalTable: "Users",
+                principalColumn: "Id");
         }
     }
 }
