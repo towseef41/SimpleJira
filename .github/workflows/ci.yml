@@ -58,8 +58,8 @@ jobs:
             sleep 1
           done
           dotnet tool install --tool-path .dotnet-tools dotnet-ef --version 8.0.4
-          export PATH="$PATH:$(pwd)/.dotnet-tools"
-          dotnet ef database update --project SimpleJira.ApiService --startup-project SimpleJira.ApiService --connection "$CONNECTION_STRING"
+          DOTNET_EF="$(pwd)/.dotnet-tools/dotnet-ef"
+          $DOTNET_EF database update --project SimpleJira.ApiService --startup-project SimpleJira.ApiService --connection "$CONNECTION_STRING"
           # ensure no pending migrations remain
-          if dotnet ef migrations list --project SimpleJira.ApiService --startup-project SimpleJira.ApiService --connection "$CONNECTION_STRING" | grep "(Pending)"; then
+          if $DOTNET_EF migrations list --project SimpleJira.ApiService --startup-project SimpleJira.ApiService --connection "$CONNECTION_STRING" | grep "(Pending)"; then
             echo "Pending migrations detected"; exit 1; fi
