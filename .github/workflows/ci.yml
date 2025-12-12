@@ -33,6 +33,9 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
+      - name: Install Aspire workload (for AppHost)
+        run: dotnet workload restore
+
       - name: Restore
         run: dotnet restore SimpleJira.sln
 
