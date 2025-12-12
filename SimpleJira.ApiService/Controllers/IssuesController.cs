@@ -42,84 +42,84 @@ public class IssuesController : ControllerBase
             .ToListAsync());
 
     }
-[HttpPost("projects/{projectId:guid}/issues")]
+
+    [HttpPost("projects/{projectId:guid}/issues")]
     public async Task<IActionResult> CreateIssue(
         Guid projectId,
         [FromBody] CreateIssueRequest request)
     {
-    if (string.IsNullOrWhiteSpace(request.Title))
-        return BadRequest("Title is required.");
+        if (string.IsNullOrWhiteSpace(request.Title))
+            return BadRequest("Title is required.");
 
-    if (request.Title.Length > 200)
-        return BadRequest("Title too long (max 200).");
+        if (request.Title.Length > 200)
+            return BadRequest("Title too long (max 200).");
 
-    if (request.Summary?.Length > 4000)
-        return BadRequest("Summary too long (max 4000).");
+        if (request.Summary?.Length > 4000)
+            return BadRequest("Summary too long (max 4000).");
 
-    if (request.StoryPoints is < 0)
-        return BadRequest("Story points cannot be negative.");
+        if (request.StoryPoints is < 0)
+            return BadRequest("Story points cannot be negative.");
 
-    User? assignee = null;
-    if (request.AssigneeId is { } assigneeId)
-    {
-        assignee = await _db.Users.FindAsync(assigneeId);
-        if (assignee is null)
-            return BadRequest("Assignee not found.");
-    }
-
-    User? reporter = null;
-    if (request.ReporterId is { } reporterId)
-    {
-        reporter = await _db.Users.FindAsync(reporterId);
-        if (reporter is null)
-            return BadRequest("Reporter not found.");
-    }
-
-    var issue = new Issue
-    {
-        Id = Guid.NewGuid(),
-        ProjectId = projectId,
-        Title = request.Title,
-        Summary = string.IsNullOrWhiteSpace(request.Summary) ? request.Title : request.Summary,
-        StoryPoints = request.StoryPoints,
-        Status = Contracts.IssueStatus.Todo,
-        Assignee = assignee,
-        Reporter = reporter
-    };
-
-    _db.Issues.Add(issue);
-
-    if (request.LinkedIssueIds is not null)
-    {
-        foreach (var linkedId in request.LinkedIssueIds.Distinct())
+        User? assignee = null;
+        if (request.AssigneeId is { } assigneeId)
         {
-            var exists = await _db.Issues.AnyAsync(x => x.Id == linkedId);
-            if (!exists) continue;
-
-            _db.IssueLinks.Add(new IssueLink
-            {
-                Id = Guid.NewGuid(),
-                IssueId = issue.Id,
-                LinkedIssueId = linkedId
-            });
+            assignee = await _db.Users.FindAsync(assigneeId);
+            if (assignee is null)
+                return BadRequest("Assignee not found.");
         }
+
+        User? reporter = null;
+        if (request.ReporterId is { } reporterId)
+        {
+            reporter = await _db.Users.FindAsync(reporterId);
+            if (reporter is null)
+                return BadRequest("Reporter not found.");
+        }
+
+        var issue = new Issue
+        {
+            Id = Guid.NewGuid(),
+            ProjectId = projectId,
+            Title = request.Title,
+            Summary = string.IsNullOrWhiteSpace(request.Summary) ? request.Title : request.Summary,
+            StoryPoints = request.StoryPoints,
+            Status = Contracts.IssueStatus.Todo,
+            Assignee = assignee,
+            Reporter = reporter
+        };
+
+        _db.Issues.Add(issue);
+
+        if (request.LinkedIssueIds is not null)
+        {
+            foreach (var linkedId in request.LinkedIssueIds.Distinct())
+            {
+                var exists = await _db.Issues.AnyAsync(x => x.Id == linkedId);
+                if (!exists) continue;
+
+                _db.IssueLinks.Add(new IssueLink
+                {
+                    Id = Guid.NewGuid(),
+                    IssueId = issue.Id,
+                    LinkedIssueId = linkedId
+                });
+            }
+        }
+
+        await _db.SaveChangesAsync();
+
+        return Ok(new IssueDto(
+            issue.Id,
+            issue.ProjectId,
+            issue.Title,
+            issue.Summary,
+            issue.StoryPoints,
+            Contracts.IssueStatus.Todo,
+            assignee is null ? null : new UserDto(assignee.Id, assignee.Name),
+            reporter is null ? null : new UserDto(reporter.Id, reporter.Name),
+            0,
+            new List<Guid>()));
     }
-
-    await _db.SaveChangesAsync();
-
-    return Ok(new IssueDto(
-        issue.Id,
-        issue.ProjectId,
-        issue.Title,
-        issue.Summary,
-        issue.StoryPoints,
-        Contracts.IssueStatus.Todo,
-        assignee is null ? null : new UserDto(assignee.Id, assignee.Name),
-        reporter is null ? null : new UserDto(reporter.Id, reporter.Name),
-        0,
-        new List<Guid>()
-    ));
-}
     [HttpPatch("issues/{issueId:guid}/status")]
     public async Task<IActionResult> UpdateStatus(
         Guid issueId,

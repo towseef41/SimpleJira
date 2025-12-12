@@ -61,12 +61,12 @@ var authEnabled = builder.Configuration.GetValue("Auth:Enabled", true);
 if (authEnabled)
 {
     // JWT Auth
-var jwtSection = builder.Configuration.GetSection("Jwt");
-var issuer = jwtSection["Issuer"] ?? "simplejira";
-var audience = jwtSection["Audience"] ?? "simplejira-web";
-var key = jwtSection["Key"] ?? "dev-secret-change-me";
-var keyBytes = Encoding.UTF8.GetBytes(key.PadRight(32, '0')); // ensure at least 256 bits
-var signingKey = new SymmetricSecurityKey(keyBytes);
+    var jwtSection = builder.Configuration.GetSection("Jwt");
+    var issuer = jwtSection["Issuer"] ?? "simplejira";
+    var audience = jwtSection["Audience"] ?? "simplejira-web";
+    var key = jwtSection["Key"] ?? "dev-secret-change-me";
+    var keyBytes = Encoding.UTF8.GetBytes(key.PadRight(32, '0')); // ensure at least 256 bits
+    var signingKey = new SymmetricSecurityKey(keyBytes);
 
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>

@@ -6,7 +6,7 @@ namespace SimpleJira.ApiService.Data;
 public class JiraDbContext : DbContext
 {
     public JiraDbContext(DbContextOptions<JiraDbContext> options)
-        : base(options) {}
+        : base(options) { }
 
     public DbSet<Project> Projects => Set<Project>();
     public DbSet<Issue> Issues => Set<Issue>();

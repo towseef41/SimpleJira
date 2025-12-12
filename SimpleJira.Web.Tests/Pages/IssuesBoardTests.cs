@@ -73,7 +73,7 @@ public class IssuesBoardTests : IDisposable
     {
         var cut = RenderIssues();
         var card = cut.Find(".issue-card");
-            card.TriggerEvent("ondragstart", new DragEventArgs());
+        card.TriggerEvent("ondragstart", new DragEventArgs());
 
         var inProgressColumn = cut.FindAll(".board-column").ElementAt(1);
         inProgressColumn.TriggerEvent("ondrop", new DragEventArgs());

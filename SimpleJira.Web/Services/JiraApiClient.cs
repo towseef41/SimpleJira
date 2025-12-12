@@ -94,9 +94,9 @@ public class JiraApiClient
         => await _http.PatchAsJsonAsync(
             $"issues/{issueId}",
             request);
-    
+
     public async Task<List<UserDto>> GetUsersAsync()
-    => await _http.GetFromJsonAsync<List<UserDto>>("users") ?? [];
+        => await _http.GetFromJsonAsync<List<UserDto>>("users") ?? [];
 
     public async Task AssignIssueAsync(Guid issueId, Guid? userId)
         => await _http.PatchAsJsonAsync(

@@ -7,7 +7,7 @@ namespace SimpleJira.ApiService.Infrastructure;
 
 public class AllowAllAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
 {
-    #pragma warning disable CS0618 // ISystemClock obsolete in favor of TimeProvider on options
+#pragma warning disable CS0618 // ISystemClock obsolete in favor of TimeProvider on options
     public AllowAllAuthHandler(
         IOptionsMonitor<AuthenticationSchemeOptions> options,
         ILoggerFactory logger,
@@ -16,7 +16,7 @@ public class AllowAllAuthHandler : AuthenticationHandler<AuthenticationSchemeOpt
         : base(options, logger, encoder, clock)
     {
     }
-    #pragma warning restore CS0618
+#pragma warning restore CS0618
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
