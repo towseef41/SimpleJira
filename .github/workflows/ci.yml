@@ -57,6 +57,8 @@ jobs:
             if pg_isready -h localhost -p 5432 -U postgres; then break; fi
             sleep 1
           done
+          # reset database to ensure a clean schema
+          PGPASSWORD=postgres psql -h localhost -p 5432 -U postgres -c "DROP DATABASE IF EXISTS simplejira_ci; CREATE DATABASE simplejira_ci;"
           dotnet tool install --tool-path .dotnet-tools dotnet-ef --version 8.0.4
           DOTNET_EF="$(pwd)/.dotnet-tools/dotnet-ef"
           $DOTNET_EF database update --project SimpleJira.ApiService --startup-project SimpleJira.ApiService --connection "$CONNECTION_STRING"
