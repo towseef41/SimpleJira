@@ -181,7 +181,7 @@ public class IssuesBoardTests : IDisposable
             {
                 var payload = new[]
                 {
-                    new ProjectDto(_projectId, "Demo", "DEMO", "Software", null, null, null)
+                    new ProjectDto(_projectId, "Demo", "DEMO", "Software", string.Empty, null, null)
                 };
                 return Task.FromResult(JsonResponse(payload));
             }
