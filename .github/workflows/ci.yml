@@ -57,8 +57,8 @@ jobs:
             if pg_isready -h localhost -p 5432 -U postgres; then break; fi
             sleep 1
           done
-          dotnet tool install -g dotnet-ef
-          export PATH="$PATH:~/.dotnet/tools"
+          dotnet tool install --tool-path .dotnet-tools dotnet-ef --version 8.0.4
+          export PATH="$PATH:$(pwd)/.dotnet-tools"
           dotnet ef database update --project SimpleJira.ApiService --startup-project SimpleJira.ApiService --connection "$CONNECTION_STRING"
           # ensure no pending migrations remain
           if dotnet ef migrations list --project SimpleJira.ApiService --startup-project SimpleJira.ApiService --connection "$CONNECTION_STRING" | grep "(Pending)"; then
