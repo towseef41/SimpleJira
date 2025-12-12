@@ -1,0 +1,88 @@
+# Compiled binaries and build output
+[Bb]in/
+[Oo]bj/
+artifacts/
+*.dll
+*.exe
+*.app
+*.dmg
+*.pkg
+*.so
+*.a
+*.lib
+*.pdb
+*.mdb
+*.log
+*.cache
+
+# Tooling / package artifacts
+packages/
+*.nupkg
+*.snupkg
+.package-cache/
+.nuget/
+.dotnet-tools/
+
+# ASP.NET / IIS
+wwwroot/*.gz
+wwwroot/*.br
+app_offline.htm
+
+# User-specific/IDE files
+*.user
+*.userprefs
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+.vscode/
+.idea/
+*.iml
+
+# Testing/coverage
+TestResults/
+coverage/
+*.trx
+*.coverage
+*.coveragexml
+*.lcov
+
+# Logs and dumps
+*.log
+*.htm
+*.html
+*.tmp
+*.bak
+*.swp
+*.swm
+*.swn
+*.swo
+*.DS_Store
+Thumbs.db
+*.orig
+*.rej
+
+# EF Core Migrations model snapshots (kept in repo) – allow migrations folder, but ignore design-time cache
+*.DesignTime.cs
+
+# Rider/JetBrains
+.idea/
+*.ipr
+*.iws
+
+# Node / frontend
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment/config overrides
+*.env
+*.env.*
+*.local
+appsettings.*.local.json
+
+# Generated static assets
+SimpleJira.Web/SimpleJira.Web.styles.css
+SimpleJira.Web/wwwroot/lib/

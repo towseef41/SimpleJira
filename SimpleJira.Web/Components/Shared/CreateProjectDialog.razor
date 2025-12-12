@@ -1,0 +1,274 @@
+@using SimpleJira.Contracts
+@using Microsoft.AspNetCore.Components
+@inject JiraApiClient Api
+
+@if (isOpen)
+{
+    <div class="modal-overlay">
+        <div class="modal-panel">
+            <h5 class="mb-3">Create Project</h5>
+
+        <label class="form-label fw-semibold">Project name <span class="text-danger">*</span></label>
+        <input class="form-control mb-2"
+               placeholder="Project name"
+               required
+               @bind="name" />
+
+        <label class="form-label fw-semibold">Project key <span class="text-danger">*</span></label>
+        <input class="form-control mb-2"
+               placeholder="Project key"
+               required
+               @bind="key" />
+
+        <select class="form-select mb-2"
+                @bind="type">
+            <option value="@DefaultType">@DefaultType</option>
+        </select>
+
+        <input class="form-control mb-3"
+               placeholder="Avatar image URL (optional)"
+               @bind="avatar" />
+
+        @if (SelectedCategory is null)
+        {
+            <input class="form-control mb-2"
+                   placeholder="Select category (optional)"
+                   list="categoryOptions"
+                   value="@categoryInput"
+                   @oninput="OnCategoryInput" />
+            <datalist id="categoryOptions">
+                @if (categories is not null)
+                {
+                    @foreach (var c in categories)
+                    {
+                        <option value="@c.Name"></option>
+                    }
+                }
+            </datalist>
+        }
+        else
+        {
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <input class="form-control"
+                       value="@SelectedCategory.Name"
+                       readonly />
+                <button class="btn btn-outline-secondary btn-sm" @onclick="ClearCategory">Change</button>
+            </div>
+        }
+
+        @if (SelectedLead is null)
+        {
+            <input class="form-control mb-3"
+                   placeholder="Select lead (optional)"
+                   list="leadOptions"
+                   value="@leadInput"
+                   @oninput="OnLeadInput" />
+            <datalist id="leadOptions">
+                @if (users is not null)
+                {
+                    @foreach (var u in users)
+                    {
+                        <option value="@u.Name"></option>
+                    }
+                }
+            </datalist>
+        }
+        else
+        {
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <input class="form-control"
+                       value="@SelectedLead.Name"
+                       readonly />
+                <button class="btn btn-outline-secondary btn-sm" @onclick="ClearLead">Change</button>
+            </div>
+        }
+
+            <div class="d-flex gap-2">
+                <button class="btn btn-primary" @onclick="Create">Create</button>
+                <button class="btn btn-secondary" @onclick="Close">Cancel</button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(error))
+            {
+                <div class="alert alert-danger mt-3" role="alert">
+                    @error
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private bool isOpen;
+    private string name = "";
+    private string key = "";
+    private const string DefaultType = "Company-managed software";
+    private string type = DefaultType;
+    private string avatar = "";
+    private string categoryInput = "";
+    private string leadInput = "";
+    private Guid? selectedCategoryId;
+    private Guid? selectedLeadId;
+    private string? error;
+
+    private List<CategoryDto>? categories;
+    private List<UserDto>? users;
+
+    [Parameter] public EventCallback OnCreated { get; set; }
+
+    public async void Open()
+    {
+        if (categories is null || users is null)
+        {
+            await LoadLookups();
+        }
+
+        isOpen = true;
+        StateHasChanged();
+    }
+
+    private void Close()
+    {
+        isOpen = false;
+    }
+
+    private async Task Create()
+    {
+        try
+        {
+            error = null;
+
+            var trimmedName = name.Trim();
+            var trimmedKey = key.Trim();
+            var trimmedType = type.Trim();
+            var trimmedAvatar = avatar.Trim();
+
+            if (string.IsNullOrWhiteSpace(trimmedName))
+            {
+                error = "Project name is required.";
+                return;
+            }
+            if (trimmedName.Length > 200)
+            {
+                error = "Project name too long (max 200).";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(trimmedKey))
+            {
+                error = "Project key is required.";
+                return;
+            }
+            if (trimmedKey.Length < 2 || trimmedKey.Length > 10)
+            {
+                error = "Project key must be 2-10 characters.";
+                return;
+            }
+
+            if (trimmedType.Length > 100)
+            {
+                error = "Project type too long (max 100).";
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(trimmedAvatar) && trimmedAvatar.Length > 500)
+            {
+                error = "Avatar URL too long (max 500).";
+                return;
+            }
+
+            var resp = await Api.CreateProjectAsync(new CreateProjectRequest(
+                null,
+                trimmedName,
+                string.IsNullOrWhiteSpace(trimmedKey) ? null : trimmedKey,
+                string.IsNullOrWhiteSpace(trimmedType) ? null : trimmedType,
+                string.IsNullOrWhiteSpace(trimmedAvatar) ? null : trimmedAvatar,
+                selectedCategoryId,
+                selectedLeadId));
+
+            if (!resp.IsSuccessStatusCode)
+            {
+                error = $"Failed to create project ({(int)resp.StatusCode} {resp.ReasonPhrase})";
+                return;
+            }
+
+            isOpen = false;
+            name = "";
+            key = "";
+            type = DefaultType;
+            avatar = "";
+            categoryInput = "";
+            leadInput = "";
+            selectedCategoryId = null;
+            selectedLeadId = null;
+            await OnCreated.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+
+    private async Task LoadLookups()
+    {
+        try
+        {
+            categories = await Api.GetCategoriesAsync();
+        }
+        catch
+        {
+            categories = new();
+        }
+
+        try
+        {
+            users = await Api.GetUsersAsync();
+        }
+        catch
+        {
+            users = new();
+        }
+    }
+
+    private void OnCategoryInput(ChangeEventArgs e)
+    {
+        categoryInput = e.Value?.ToString() ?? "";
+        selectedCategoryId = categories?
+            .FirstOrDefault(c =>
+                c.Name.Equals(categoryInput, StringComparison.OrdinalIgnoreCase) ||
+                c.Id.ToString().Equals(categoryInput, StringComparison.OrdinalIgnoreCase))
+            ?.Id;
+    }
+
+    private void OnLeadInput(ChangeEventArgs e)
+    {
+        leadInput = e.Value?.ToString() ?? "";
+        selectedLeadId = users?
+            .FirstOrDefault(u =>
+                u.Name.Equals(leadInput, StringComparison.OrdinalIgnoreCase) ||
+                u.Id.ToString().Equals(leadInput, StringComparison.OrdinalIgnoreCase))
+            ?.Id;
+    }
+
+    private void ClearCategory()
+    {
+        selectedCategoryId = null;
+        categoryInput = "";
+    }
+
+    private void ClearLead()
+    {
+        selectedLeadId = null;
+        leadInput = "";
+    }
+
+    private CategoryDto? SelectedCategory =>
+        selectedCategoryId.HasValue
+            ? categories?.FirstOrDefault(c => c.Id == selectedCategoryId)
+            : null;
+
+    private UserDto? SelectedLead =>
+        selectedLeadId.HasValue
+            ? users?.FirstOrDefault(u => u.Id == selectedLeadId)
+            : null;
+}

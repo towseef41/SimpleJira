@@ -1,0 +1,102 @@
+@page "/projects"
+@using SimpleJira.Web.Services
+@using SimpleJira.Contracts
+@inject JiraApiClient Api
+@inject NavigationManager Nav
+@inject AuthService Auth
+
+<h3 class="mb-3">Projects</h3>
+
+<button class="btn btn-primary mb-3" @onclick="OpenCreateDialog">
+    Create project
+</button>
+
+@if (projects is null)
+{
+    <p>Loading…</p>
+}
+else if (!projects.Any())
+{
+    <p>No projects yet.</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Key</th>
+                    <th>Type</th>
+                    <th>Category</th>
+                    <th>Lead</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var project in projects)
+                {
+                    <tr style="cursor:pointer" @onclick="() => OpenProject(project.Id)">
+                        <td class="d-flex align-items-center gap-2">
+                            @if (!string.IsNullOrWhiteSpace(project.Avatar))
+                            {
+                                <img src="@project.Avatar"
+                                     alt="@project.Name"
+                                     style="width:40px;height:40px;object-fit:cover;border-radius:8px;" />
+                            }
+                            else
+                            {
+                                <div class="bg-secondary text-white d-inline-flex align-items-center justify-content-center"
+                                     style="width:40px;height:40px;border-radius:8px;font-weight:600;">
+                                    @project.Key[..Math.Min(project.Key.Length, 2)]
+                                </div>
+                            }
+                            <span>@project.Name</span>
+                        </td>
+                        <td>@project.Key</td>
+                        <td>@project.Type</td>
+                        <td>@project.Category?.Name</td>
+                        <td>@project.Lead?.Name</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<CreateProjectDialog @ref="createDialog" OnCreated="Reload" />
+
+@code {
+    private List<ProjectDto>? projects;
+    private CreateProjectDialog? createDialog;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Auth.HasToken)
+        {
+            Nav.NavigateTo("/login", true);
+            return;
+        }
+        await LoadProjects();
+    }
+
+    private async Task LoadProjects()
+    {
+        projects = await Api.GetProjectsAsync();
+    }
+
+    private void OpenCreateDialog()
+    {
+        createDialog?.Open();
+    }
+
+    private async Task Reload()
+    {
+        await LoadProjects();
+        StateHasChanged();
+    }
+
+    private void OpenProject(Guid projectId)
+    {
+        Nav.NavigateTo($"/projects/{projectId}");
+    }
+}

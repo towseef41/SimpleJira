@@ -1,0 +1,510 @@
+@page "/projects/{ProjectId:guid}"
+@using SimpleJira.Web.Services
+@using SimpleJira.Contracts
+@using Microsoft.AspNetCore.Components.Web
+@inject JiraApiClient Api
+@inject AuthService Auth
+@inject NavigationManager Nav
+
+<h3 class="mb-1">@projectName</h3>
+<p class="text-muted mb-3">Project board</p>
+
+@if (!string.IsNullOrWhiteSpace(error))
+{
+    <div class="alert alert-danger" role="alert">
+        @error
+    </div>
+}
+
+<div class="mb-3 d-flex gap-2">
+    <button class="btn btn-primary" @onclick="OpenCreateDialog">New issue</button>
+</div>
+
+@if (isCreateOpen)
+{
+    <div style="position:fixed; inset:0; background-color:rgba(0,0,0,0.4); z-index:1050;">
+        <div style="
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translate(-50%, -20%);
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            min-width: 360px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+
+            <h5 class="mb-3">Create Issue</h5>
+
+            <label class="form-label fw-semibold">Title <span class="text-danger">*</span></label>
+            <input class="form-control mb-2"
+                   placeholder="Issue title"
+                   @bind="newIssueTitle"
+                   @bind:event="oninput"
+                   @onkeydown="HandleCreateKeyDown" />
+
+            <label class="form-label fw-semibold">Summary</label>
+            <textarea class="form-control mb-2"
+                      placeholder="Short description (optional)"
+                      rows="3"
+                      @bind="newIssueSummary"></textarea>
+
+            <label class="form-label fw-semibold">Story points</label>
+            <input class="form-control mb-3"
+                   placeholder="e.g. 3"
+                   type="number"
+                   min="0"
+                   @bind="newIssueStoryPoints" />
+
+            <div class="d-flex gap-2">
+                <button class="btn btn-primary"
+                        disabled="@isCreating"
+                        @onclick="CreateIssue">
+                    @(isCreating ? "Creating..." : "Create")
+                </button>
+                <button class="btn btn-secondary" @onclick="CloseCreateDialog">Cancel</button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (isDetailOpen && selectedIssue is not null)
+{
+    <div style="position:fixed; inset:0; background-color:rgba(0,0,0,0.4); z-index:1050;">
+        <div class="modal-panel modal-panel-light" style="top:15%; min-width: 420px; max-width: 600px;">
+
+            <h5 class="mb-3">Issue Details</h5>
+
+            <label class="form-label fw-semibold">Title <span class="text-danger">*</span></label>
+            <input class="form-control mb-2"
+                   placeholder="Issue title"
+                   @bind="detailTitle" />
+
+            <label class="form-label fw-semibold">Summary</label>
+            <textarea class="form-control mb-2"
+                      placeholder="Short description"
+                      rows="4"
+                      @bind="detailSummary"></textarea>
+
+            <label class="form-label fw-semibold">Story points</label>
+            <input class="form-control mb-3"
+                   placeholder="e.g. 3"
+                   type="number"
+                   min="0"
+                   @bind="detailStoryPoints" />
+
+            <div class="d-flex gap-2">
+                <button class="btn btn-primary" @onclick="SaveIssueDetails">Save</button>
+                <button class="btn btn-secondary" @onclick="CloseIssueModal">Close</button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (issues is null)
+{
+    <p>Loading issues…</p>
+}
+else
+{
+<div class="row">
+    @foreach (var column in Columns)
+    {
+        <div class="col-md-4">
+            <h5>@column</h5>
+
+            <div class="border rounded p-2 board-column"
+                 style="min-height: 60vh;"
+                 @ondragover:preventDefault="true"
+                 @ondrop:stopPropagation="true"
+                 @ondrop:preventDefault="true"
+                 @ondrop="async (DragEventArgs e) => await HandleDrop(column, e)"
+                     @ondragenter="(DragEventArgs e) => OnDragEnter(column)">
+                    @foreach (var issue in issues.Where(i => i.Status == column))
+                    {
+                        <div class="card mb-2 issue-card"
+                             draggable="true"
+                             @ondragstart="(DragEventArgs e) => StartDrag(e, issue.Id)"
+                             @ondragend="async (DragEventArgs e) => await EndDrag()"
+                             @ondragover:preventDefault="true"
+                             @ondrop:preventDefault="true"
+                             @ondrop:stopPropagation="true"
+                             @ondrop="async (DragEventArgs e) => await HandleDrop(column, e)"
+                             @onclick="() => OpenIssueModal(issue)">
+                            <div class="card-body p-2 position-relative" style="min-height: 88px;">
+
+                                <!-- Title + saving indicator -->
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <strong>@issue.Title</strong>
+                                    </div>
+
+                                    @if (IsUpdating(issue.Id))
+                                    {
+                                        <span class="badge text-bg-secondary">Saving…</span>
+                                    }
+                                </div>
+
+                                <!-- Story points + assignee avatar anchored bottom/right -->
+                                <div class="mt-3 d-flex justify-content-end align-items-center gap-2 flex-wrap">
+                                    <span class="sp-chip">
+                                        @(issue.StoryPoints?.ToString() ?? "-")
+                                    </span>
+
+                                    <div class="position-relative">
+                                        <button type="button"
+                                                class="btn btn-sm btn-light rounded-circle p-1"
+                                                style="width:32px;height:32px;"
+                                                @onclick:stopPropagation="true"
+                                                @onclick="() => ToggleAssigneeMenu(issue.Id)">
+                                            @if (issue.Assignee is not null)
+                                            {
+                                                <span title="@issue.Assignee.Name">@issue.Assignee.Name[..Math.Min(issue.Assignee.Name.Length, 2)]</span>
+                                            }
+                                            else
+                                            {
+                                                <img src="https://gravatar.com/avatar/d52567a1de775edfa6bb1d7691053237?s=64&d=mp&r=x"
+                                                     alt="Unassigned"
+                                                     style="width:24px;height:24px;border-radius:50%;object-fit:cover;" />
+                                            }
+                                        </button>
+
+                                        @if (assigneePicker == issue.Id)
+                                        {
+                                            <div class="card shadow-sm position-absolute mt-1" style="z-index:10; min-width: 160px;">
+                                                <div class="list-group list-group-flush">
+                                                    <button class="list-group-item list-group-item-action"
+                                                            @onclick:stopPropagation="true"
+                                                            @onclick="() => Assign(issue.Id, (string?)null)">Unassigned</button>
+                                                    @foreach (var user in users)
+                                                    {
+                                                        <button class="list-group-item list-group-item-action"
+                                                                @onclick:stopPropagation="true"
+                                                                @onclick="() => Assign(issue.Id, user.Id.ToString())">
+                                                            @user.Name
+                                                        </button>
+                                                    }
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public Guid ProjectId { get; set; }
+
+    private List<IssueDto>? issues;
+    private List<UserDto> users = new();
+    private List<ProjectDto> projects = new();
+    private string projectName = "Project";
+
+    private string newIssueTitle = "";
+    private string newIssueSummary = "";
+    private string newIssueStoryPoints = "";
+    private bool isCreating = false;
+    private bool isCreateOpen = false;
+    private bool isDetailOpen = false;
+    private IssueDto? selectedIssue;
+    private string detailTitle = "";
+    private string detailSummary = "";
+    private string detailStoryPoints = "";
+
+    private readonly HashSet<Guid> updating = new();
+    private Guid? assigneePicker;
+    private Guid? draggingIssueId;
+    private IssueStatus? dragTargetColumn;
+    private string? error;
+
+    private static readonly IssueStatus[] Columns =
+    {
+        IssueStatus.Todo,
+        IssueStatus.InProgress,
+        IssueStatus.Done
+    };
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!Auth.HasToken)
+        {
+            Nav.NavigateTo("/login", true);
+            return;
+        }
+        await LoadUsers();
+        await LoadIssues();
+        await LoadProject();
+    }
+
+    private async Task LoadUsers()
+    {
+        try
+        {
+            users = await Api.GetUsersAsync();
+        }
+        catch
+        {
+            users = new();
+        }
+    }
+
+    private async Task LoadIssues()
+    {
+        try
+        {
+            error = null;
+            issues = await Api.GetIssuesAsync(ProjectId);
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+            issues ??= new();
+        }
+    }
+
+    private async Task LoadProject()
+    {
+        try
+        {
+            projectName = "Project";
+            projects = await Api.GetProjectsAsync();
+            var current = projects.FirstOrDefault(p => p.Id == ProjectId);
+            if (current is not null)
+            {
+                projectName = current.Name;
+            }
+        }
+        catch
+        {
+            projectName = "Project";
+        }
+    }
+
+    private async Task CreateIssue()
+    {
+        if (string.IsNullOrWhiteSpace(newIssueTitle) || isCreating)
+            return;
+
+        try
+        {
+            error = null;
+            isCreating = true;
+
+            int? storyPoints = null;
+            if (int.TryParse(newIssueStoryPoints, out var sp))
+            {
+                storyPoints = sp;
+            }
+
+            await Api.CreateIssueAsync(
+                ProjectId,
+                newIssueTitle.Trim(),
+                string.IsNullOrWhiteSpace(newIssueSummary) ? newIssueTitle.Trim() : newIssueSummary.Trim(),
+                storyPoints);
+            newIssueTitle = "";
+            newIssueSummary = "";
+            newIssueStoryPoints = "";
+            isCreateOpen = false;
+
+            await LoadIssues();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isCreating = false;
+        }
+    }
+
+    private async Task HandleCreateKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await CreateIssue();
+        }
+    }
+
+    private void OpenCreateDialog()
+    {
+        isCreateOpen = true;
+    }
+
+    private void CloseCreateDialog()
+    {
+        isCreateOpen = false;
+        newIssueTitle = "";
+        newIssueSummary = "";
+        newIssueStoryPoints = "";
+    }
+
+    private void OpenIssueModal(IssueDto issue)
+    {
+        selectedIssue = issue;
+        detailTitle = issue.Title;
+        detailSummary = issue.Summary ?? "";
+        detailStoryPoints = issue.StoryPoints?.ToString() ?? "";
+        isDetailOpen = true;
+    }
+
+    private void CloseIssueModal()
+    {
+        isDetailOpen = false;
+        selectedIssue = null;
+        detailTitle = "";
+        detailSummary = "";
+        detailStoryPoints = "";
+    }
+
+    private async Task SaveIssueDetails()
+    {
+        if (selectedIssue is null)
+            return;
+
+        try
+        {
+            int? sp = null;
+            if (int.TryParse(detailStoryPoints, out var parsed))
+                sp = parsed;
+
+            var resp = await Api.UpdateIssueAsync(
+                selectedIssue.Id,
+                new UpdateIssueRequest(
+                    string.IsNullOrWhiteSpace(detailTitle) ? selectedIssue.Title : detailTitle.Trim(),
+                    string.IsNullOrWhiteSpace(detailSummary) ? selectedIssue.Title : detailSummary.Trim(),
+                    sp));
+
+            if (!resp.IsSuccessStatusCode)
+            {
+                error = $"Failed to update issue ({(int)resp.StatusCode})";
+                return;
+            }
+
+            await LoadIssues();
+            CloseIssueModal();
+        }
+        catch (Exception ex)
+        {
+            error = $"Failed to update issue: {ex.Message}";
+        }
+    }
+
+    private bool IsUpdating(Guid issueId) => updating.Contains(issueId);
+
+    private async Task ChangeStatusOptimistic(Guid issueId, IssueStatus newStatus)
+    {
+        if (issues is null || updating.Contains(issueId))
+            return;
+
+        var idx = issues.FindIndex(i => i.Id == issueId);
+        if (idx < 0) return;
+
+        var old = issues[idx];
+
+        issues[idx] = old with { Status = newStatus };
+        updating.Add(issueId);
+        StateHasChanged();
+
+        try
+        {
+            var resp = await Api.UpdateIssueStatusAsync(issueId, newStatus);
+            if (!resp.IsSuccessStatusCode)
+            {
+                issues[idx] = old;
+                error = $"Failed to update status ({(int)resp.StatusCode})";
+            }
+            else
+            {
+                // refresh from server to keep columns consistent
+                await LoadIssues();
+            }
+        }
+        catch (Exception ex)
+        {
+            issues[idx] = old;
+            error = $"Failed to update status: {ex.Message}";
+        }
+        finally
+        {
+            updating.Remove(issueId);
+            StateHasChanged();
+        }
+    }
+
+    private async Task Assign(Guid issueId, string? userId)
+    {
+        if (updating.Contains(issueId))
+            return;
+
+        try
+        {
+            updating.Add(issueId);
+            await Api.AssignIssueAsync(
+                issueId,
+                string.IsNullOrWhiteSpace(userId) ? null : Guid.Parse(userId));
+
+            await LoadIssues();
+        }
+        catch (Exception ex)
+        {
+            error = $"Failed to assign issue: {ex.Message}";
+        }
+        finally
+        {
+            updating.Remove(issueId);
+            assigneePicker = null;
+        }
+    }
+
+    private void ToggleAssigneeMenu(Guid issueId)
+    {
+        assigneePicker = assigneePicker == issueId ? null : issueId;
+    }
+
+    private void StartDrag(DragEventArgs e, Guid issueId)
+    {
+        draggingIssueId = issueId;
+        Console.WriteLine($"Drag start: {issueId}");
+    }
+    private void OnDragEnter(IssueStatus column) => dragTargetColumn = column;
+
+    private async Task EndDrag()
+    {
+        if (draggingIssueId is { } id && dragTargetColumn is { } target)
+        {
+            await HandleDrop(target);
+        }
+
+        draggingIssueId = null;
+        dragTargetColumn = null;
+    }
+
+    private async Task HandleDrop(IssueStatus newStatus, DragEventArgs? e = null)
+    {
+        Console.WriteLine($"Drop on {newStatus} (dragging={draggingIssueId})");
+        if (issues is null)
+            return;
+
+        var issueId = draggingIssueId;
+        if (issueId is null)
+            return;
+
+        var issue = issues.FirstOrDefault(i => i.Id == issueId.Value);
+        if (issue is null || issue.Status == newStatus)
+        {
+            draggingIssueId = null;
+            return;
+        }
+
+        await ChangeStatusOptimistic(issue.Id, newStatus);
+        draggingIssueId = null;
+    }
+}

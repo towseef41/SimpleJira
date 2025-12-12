@@ -1,0 +1,54 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.0.0
+MinimumVisualStudioVersion = 17.8.0.0
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleJira.AppHost", "SimpleJira.AppHost\SimpleJira.AppHost.csproj", "{86674370-9B4B-4C49-90D5-63AC29E16D20}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleJira.ServiceDefaults", "SimpleJira.ServiceDefaults\SimpleJira.ServiceDefaults.csproj", "{6EADCEA1-3B7C-47A5-9C71-F13A2124ECD9}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleJira.ApiService", "SimpleJira.ApiService\SimpleJira.ApiService.csproj", "{DE5B2DA5-AF4A-4E06-8216-A030DDCA125F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleJira.Web", "SimpleJira.Web\SimpleJira.Web.csproj", "{9C219542-8ABA-43E0-9A1E-D90A4934E216}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleJira.ApiService.Tests", "SimpleJira.ApiService.Tests\SimpleJira.ApiService.Tests.csproj", "{B8C0C43A-F2EB-4A62-9CE2-B3A0F4A72D8C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleJira.Web.Tests", "SimpleJira.Web.Tests\SimpleJira.Web.Tests.csproj", "{7C6B1F81-2CE5-4EA9-8D02-4A4065B46446}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{86674370-9B4B-4C49-90D5-63AC29E16D20}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{86674370-9B4B-4C49-90D5-63AC29E16D20}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{86674370-9B4B-4C49-90D5-63AC29E16D20}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{86674370-9B4B-4C49-90D5-63AC29E16D20}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6EADCEA1-3B7C-47A5-9C71-F13A2124ECD9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6EADCEA1-3B7C-47A5-9C71-F13A2124ECD9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6EADCEA1-3B7C-47A5-9C71-F13A2124ECD9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6EADCEA1-3B7C-47A5-9C71-F13A2124ECD9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DE5B2DA5-AF4A-4E06-8216-A030DDCA125F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DE5B2DA5-AF4A-4E06-8216-A030DDCA125F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DE5B2DA5-AF4A-4E06-8216-A030DDCA125F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DE5B2DA5-AF4A-4E06-8216-A030DDCA125F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9C219542-8ABA-43E0-9A1E-D90A4934E216}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9C219542-8ABA-43E0-9A1E-D90A4934E216}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9C219542-8ABA-43E0-9A1E-D90A4934E216}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9C219542-8ABA-43E0-9A1E-D90A4934E216}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B8C0C43A-F2EB-4A62-9CE2-B3A0F4A72D8C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B8C0C43A-F2EB-4A62-9CE2-B3A0F4A72D8C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B8C0C43A-F2EB-4A62-9CE2-B3A0F4A72D8C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B8C0C43A-F2EB-4A62-9CE2-B3A0F4A72D8C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7C6B1F81-2CE5-4EA9-8D02-4A4065B46446}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7C6B1F81-2CE5-4EA9-8D02-4A4065B46446}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7C6B1F81-2CE5-4EA9-8D02-4A4065B46446}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7C6B1F81-2CE5-4EA9-8D02-4A4065B46446}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {08DD2F1C-ECE4-4C5C-A40C-6FB82D97A538}
+	EndGlobalSection
+EndGlobal

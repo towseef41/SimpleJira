@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ "*" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: simplejira_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore SimpleJira.sln
+
+      - name: Format check
+        run: dotnet format SimpleJira.sln --verify-no-changes
+
+      - name: Build
+        run: dotnet build SimpleJira.sln --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test SimpleJira.sln --configuration Release --no-build --logger "trx;LogFileName=test-results.trx"
+
+      - name: Apply migrations against ephemeral DB and fail on pending
+        env:
+          CONNECTION_STRING: Host=localhost;Port=5432;Database=simplejira_ci;Username=postgres;Password=postgres
+        run: |
+          # wait for Postgres
+          for i in {1..30}; do
+            if pg_isready -h localhost -p 5432 -U postgres; then break; fi
+            sleep 1
+          done
+          dotnet tool install -g dotnet-ef
+          export PATH="$PATH:~/.dotnet/tools"
+          dotnet ef database update --project SimpleJira.ApiService --startup-project SimpleJira.ApiService --connection "$CONNECTION_STRING"
+          # ensure no pending migrations remain
+          if dotnet ef migrations list --project SimpleJira.ApiService --startup-project SimpleJira.ApiService --connection "$CONNECTION_STRING" | grep "(Pending)"; then
+            echo "Pending migrations detected"; exit 1; fi

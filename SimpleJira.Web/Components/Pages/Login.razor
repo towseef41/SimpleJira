@@ -1,0 +1,72 @@
+@page "/login"
+@using SimpleJira.Web.Services
+@inject JiraApiClient Api
+@inject AuthService Auth
+@inject NavigationManager Nav
+
+<PageTitle>Login</PageTitle>
+
+<div class="modal-overlay">
+    <div class="modal-panel modal-panel-light" style="top: 10%; min-width: 360px; max-width: 420px;">
+        <h4 class="mb-3">Sign in</h4>
+
+        <label class="form-label fw-semibold">Username</label>
+        <input class="form-control mb-3"
+               placeholder="Enter a username"
+               @bind="username"
+               @bind:event="oninput" />
+
+        <div class="d-flex gap-2">
+            <button class="btn btn-primary"
+                    disabled="@isSubmitting"
+                    @onclick="HandleLogin">
+                @(isSubmitting ? "Signing in…" : "Sign in")
+            </button>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(error))
+        {
+            <div class="alert alert-danger mt-3" role="alert">
+                @error
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private string username = "";
+    private bool isSubmitting = false;
+    private string? error;
+
+    private async Task HandleLogin()
+    {
+        if (string.IsNullOrWhiteSpace(username))
+        {
+            error = "Username is required.";
+            return;
+        }
+
+        try
+        {
+            isSubmitting = true;
+            error = null;
+
+            var token = await Api.GetDevTokenAsync(username.Trim());
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                error = "Login failed.";
+                return;
+            }
+
+            Nav.NavigateTo("/projects", true);
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+}

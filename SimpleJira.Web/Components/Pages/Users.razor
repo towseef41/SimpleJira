@@ -1,0 +1,75 @@
+@page "/users"
+@using SimpleJira.Web.Services
+@using SimpleJira.Contracts
+@inject JiraApiClient Api
+@inject AuthService Auth
+@inject NavigationManager Nav
+
+<h3 class="mb-3">Users</h3>
+
+@if (!string.IsNullOrWhiteSpace(error))
+{
+    <div class="alert alert-danger" role="alert">
+        @error
+    </div>
+}
+
+@if (users is null)
+{
+    <p>Loading users…</p>
+}
+else if (!users.Any())
+{
+    <p>No users found.</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Id</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in users)
+                {
+                    <tr>
+                        <td>@user.Name</td>
+                        <td class="text-muted small">@user.Id</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private List<UserDto>? users;
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Auth.HasToken)
+        {
+            Nav.NavigateTo("/login", true);
+            return;
+        }
+        await LoadUsers();
+    }
+
+    private async Task LoadUsers()
+    {
+        try
+        {
+            error = null;
+            users = await Api.GetUsersAsync();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+            users = new();
+        }
+    }
+}
